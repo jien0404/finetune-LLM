@@ -13,7 +13,11 @@ model:
   max_seq_length: 2048
   load_in_4bit: false   # true => QLoRA (bắt buộc cho model >= 27B trên L40S 46GB)
   dtype: bfloat16       # L40S hỗ trợ bf16 tốt
-  use_unsloth: true     # true: dùng Unsloth (nhanh, ít VRAM); false: fallback TRL+PEFT thuần
+  # use_unsloth: tạm để FALSE vì Unsloth (logits rỗng khi train) xung đột với metric
+  # entropy của TRL 0.21 (entropy_from_logits crash). transformers+PEFT thuần ổn định,
+  # trên L40S 46GB vẫn đủ VRAM cho LoRA bf16 <=12B và QLoRA model lớn. Bật lại khi đã
+  # xử lý compat Unsloth<->TRL. Xem docs/RESEARCH_LOG.md.
+  use_unsloth: false
 
 # --- Phương pháp finetune ---
 method: lora            # lora | qlora (qlora = lora + load_in_4bit)

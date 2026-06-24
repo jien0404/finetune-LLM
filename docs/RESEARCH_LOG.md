@@ -71,4 +71,20 @@ mới). vLLM + lm-eval-harness cho eval. Tracking: check W&B trước, fallback 
 **Chưa push GitHub:** repo mới `git init` + commit local; **chưa có remote**. Cần người dùng tạo repo GitHub
 rồi `git remote add origin ... && git push -u origin main`.
 
+## 2026-06-24 — Ngày 1 (chạy thật trên L40S): gỡ loạt lỗi môi trường
+
+Smoke test trên L40S (Python 3.11, torch 2.6.0+cu124, transformers 4.57, TRL 0.21) phát hiện và fix:
+1. **Python 3.8** trên máy → transformers ≥4.57 không cài được. Fix: venv `uv --python 3.11`.
+2. **W&B check sai** (ping HEAD root → 404 dù đã login). Fix: dùng `wandb.Api().viewer`. → PASS (user logged in).
+3. **`configs/data/*.yaml` không có trên máy** vì `.gitignore` `data/` nuốt luôn `configs/data/`. Fix: neo `/data/`.
+4. **torchao crash** (cần torch≥2.11 nhưng vLLM ghim torch 2.6.0) làm transformers import fail. Fix: gỡ torchao (ta dùng bitsandbytes).
+5. **TRL 0.21 đổi API**: `SFTConfig.max_seq_length`→`max_length`; `SFTTrainer(tokenizer=)`→`processing_class=`.
+6. **Unsloth ↔ TRL 0.21 xung đột**: Unsloth trả logits rỗng khi train (tiết kiệm VRAM) → TRL metric
+   `entropy_from_logits` reshape tensor 0 phần tử → crash. **Quyết định: tạm tắt Unsloth** (`use_unsloth: false`),
+   dùng transformers+PEFT thuần — ổn định, trên L40S 46GB vẫn đủ VRAM. Việc tương lai: thử cặp version
+   Unsloth/TRL tương thích để bật lại (lợi ích ~2x tốc độ, ~70% VRAM) cho model lớn.
+
+**Bài học:** stack HF mid-2026 (transformers 5.x sắp tới, TRL 0.21) đổi API nhanh — pin version vào
+`requirements.txt` khi đã có cấu hình chạy được trên L40S.
+
 <!-- Thêm mục mới phía dưới theo ngày -->
