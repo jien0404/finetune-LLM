@@ -150,13 +150,17 @@ def tokenize_completion_only(example: Dict, tokenizer, max_len: int) -> Dict:
     đảm bảo đúng special token. Tự viết để KHÔNG phụ thuộc TRL (API hay đổi/bug).
     """
     messages = example["messages"]
-    full_ids = tokenizer.apply_chat_template(
-        messages, tokenize=True, add_generation_prompt=False
+    # Lấy STRING trước (tokenize=False) rồi tokenize riêng -> đảm bảo list[int]
+    # (một số tokenizer trả về object Encoding khi tokenize=True, pyarrow không lưu được).
+    full_text = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=False
     )
-    # prompt = mọi message trừ assistant cuối, kèm generation prompt
-    prompt_ids = tokenizer.apply_chat_template(
-        messages[:-1], tokenize=True, add_generation_prompt=True
+    prompt_text = tokenizer.apply_chat_template(
+        messages[:-1], tokenize=False, add_generation_prompt=True
     )
+    # chat template đã chèn special token -> add_special_tokens=False
+    full_ids = tokenizer(full_text, add_special_tokens=False)["input_ids"]
+    prompt_ids = tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
     labels = list(full_ids)
     n_mask = min(len(prompt_ids), len(full_ids))
     for i in range(n_mask):
