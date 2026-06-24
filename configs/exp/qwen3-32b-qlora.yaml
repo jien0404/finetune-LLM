@@ -1,0 +1,14 @@
+# Qwen3-32B qua QLoRA 4-bit. bf16 (64GB) không vừa 46GB -> bắt buộc 4-bit (~18GB weights).
+experiment:
+  id: qwen3-32b_qlora-r16_lr2e4_ep1
+
+model:
+  name: Qwen/Qwen3-32B
+  load_in_4bit: true        # QLoRA
+  max_seq_length: 1024
+
+method: qlora
+
+train:
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 16   # giữ effective batch = 32

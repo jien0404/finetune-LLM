@@ -1,0 +1,14 @@
+# Qwen3-14B, LoRA bf16. Weights ~28GB; với Liger + checkpointing vừa khít L40S 46GB.
+experiment:
+  id: qwen3-14b_lora-r16_lr2e4_ep1
+
+model:
+  name: Qwen/Qwen3-14B
+  load_in_4bit: false
+  max_seq_length: 1024
+
+method: lora
+
+train:
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 16   # giữ effective batch = 32
