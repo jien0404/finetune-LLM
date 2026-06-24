@@ -1,6 +1,6 @@
 # Baseline #2 — Gemma-3-4B-it, LoRA bf16.
 experiment:
-  id: gemma3-4b_lora-r16_lr2e4_ep2
+  id: gemma3-4b_lora-r16_lr2e4_ep1
 
 model:
   name: google/gemma-3-4b-it

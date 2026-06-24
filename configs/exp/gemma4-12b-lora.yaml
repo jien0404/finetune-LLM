@@ -1,6 +1,6 @@
 # Gemma-4-12B-it (bản mới nhất), LoRA bf16. So với Gemma-3-12B.
 experiment:
-  id: gemma4-12b_lora-r16_lr2e4_ep2
+  id: gemma4-12b_lora-r16_lr2e4_ep1
 
 model:
   name: google/gemma-4-12b-it     # verify repo id chính xác trên HF khi chạy

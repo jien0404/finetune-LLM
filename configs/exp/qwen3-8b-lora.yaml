@@ -1,6 +1,6 @@
 # Qwen3-8B, LoRA bf16. ~22GB VRAM trên L40S.
 experiment:
-  id: qwen3-8b_lora-r16_lr2e4_ep2
+  id: qwen3-8b_lora-r16_lr2e4_ep1
 
 model:
   name: Qwen/Qwen3-8B

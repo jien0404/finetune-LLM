@@ -1,6 +1,6 @@
 # Qwen3.5-4B (thế hệ mới), LoRA bf16. So với Qwen3-4B-Instruct-2507.
 experiment:
-  id: qwen3.5-4b_lora-r16_lr2e4_ep2
+  id: qwen3.5-4b_lora-r16_lr2e4_ep1
 
 model:
   name: Qwen/Qwen3.5-4B           # verify repo id (có thể có hậu tố -Instruct) khi chạy
