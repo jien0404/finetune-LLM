@@ -43,7 +43,7 @@ lora:
 
 # --- Dữ liệu ---
 data:
-  mix_config: configs/data/instruction_mix_v1.yaml   # định nghĩa nguồn + tỉ lệ
+  mix_config: configs/data/instruction_mix_v2.yaml   # v2: Aya human + bkai (bỏ Bactrian dịch máy)
   val_fraction: 0.10
   devset_size: 300       # subset cố định để sanity định tính
   max_train_samples: null  # null = dùng hết; đặt số nhỏ để debug nhanh

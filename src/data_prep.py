@@ -115,6 +115,12 @@ def load_source_rows(src: Dict, dry_run: bool) -> Iterable[Dict]:
         ds = load_dataset(src["hf_path"], src["hf_config"], split=split)
     else:
         ds = load_dataset(src["hf_path"], split=split)
+    # Lọc theo cột (vd Aya: chỉ giữ language == "Vietnamese")
+    flt = src.get("filter")
+    if flt:
+        for col, val in flt.items():
+            ds = ds.filter(lambda r, c=col, v=val: r.get(c) == v)
+
     max_samples = src.get("max_samples")
     for i, row in enumerate(ds):
         if max_samples is not None and i >= max_samples:

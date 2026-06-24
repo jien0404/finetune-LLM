@@ -1,0 +1,38 @@
+# Mix instruction tiếng Việt CHẤT LƯỢNG CAO (v2).
+# Ưu tiên data do người bản xứ viết (Aya) + lab uy tín (bkai/HUST). BỎ Bactrian-X (dịch máy 2 lớp).
+
+name: instruction_mix_v2
+description: Aya (human VN, ACL 2024) + bkai vi-alpaca. Chất lượng cao hơn v1.
+
+sources:
+  - name: aya-vi-human
+    hf_path: CohereForAI/aya_dataset
+    split: train
+    filter:
+      language: Vietnamese      # 8.676 cặp do người bản xứ viết
+    columns:
+      instruction: inputs
+      output: targets           # không có cột input riêng
+    weight: 1.0
+    max_samples: null
+
+  - name: vi-alpaca-bkai
+    hf_path: bkai-foundation-models/vi-alpaca   # lab BKAI/HUST
+    split: train
+    columns:
+      instruction: instruction
+      input: input
+      output: output
+    weight: 1.0
+    max_samples: 30000          # cắt bớt để Aya (human) không bị lấn át hoàn toàn
+
+cleaning:
+  unicode_normalize: NFC
+  drop_empty: true
+  min_chars_output: 1
+  max_chars_output: 8000
+  dedup: true
+  toxicity_filter: true
+
+prompt_template: vi_instruct_v1
+system_prompt: "Bạn là trợ lý AI hữu ích, trả lời bằng tiếng Việt rõ ràng và chính xác."

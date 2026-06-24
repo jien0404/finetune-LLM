@@ -1,0 +1,13 @@
+# Qwen3-4B-BASE (pretrained, CHƯA instruct) + SFT mix v2.
+# Đây là thí nghiệm "thật": base chưa biết tuân lệnh -> SFT sẽ tạo cú nhảy LỚN, rõ giá trị.
+# So với: (a) base chưa tune, (b) Qwen3-4B-Instruct của Alibaba (trần tham chiếu).
+experiment:
+  id: qwen3-4b-base_lora-r16_lr2e4_ep1
+
+model:
+  name: Qwen/Qwen3-4B-Base       # có chat_template -> dùng được pipeline hiện tại
+  load_in_4bit: false
+  max_seq_length: 1024
+
+method: lora
+# data.mix_config kế thừa base.yaml = instruction_mix_v2

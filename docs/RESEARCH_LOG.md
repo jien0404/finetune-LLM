@@ -144,4 +144,34 @@ chunk, **không materialize full logits** → giảm 60-80% VRAM phần loss + n
 **Hệ quả:** sau khi bật Liger, có thể cân nhắc tắt gradient checkpointing hoặc tăng batch để nhanh hơn nữa
 (việc tối ưu tiếp, đo VRAM thực rồi quyết).
 
+## 2026-06-24 — Phân tích kết quả Qwen3-4B + xoay hướng (base model + data uy tín)
+
+**Kết quả (proxy VMLU 744 câu):**
+- Qwen3-4B-Instruct: base 63.71 → tuned 62.1 (**−1.61**). VRAM 14.57GB (Liger ✓), 5h18m.
+- Qwen3.5-4B: base **24.06** (≈ ngẫu nhiên).
+
+**Phân tích:**
+1. **−1.61 nằm trong nhiễu** (SE trên 744 câu ≈ ±1.8%) → coi như đi ngang, KHÔNG phải regression thật.
+   Kiến thức được giữ (không catastrophic forgetting).
+2. **Vì sao SFT không cải thiện:** đang tune `Qwen3-4B-Instruct` (model ĐÃ instruction-tune chất lượng cao)
+   bằng data **dịch máy** (Bactrian-X + vi-alpaca) → không thể vượt, chỉ giữ/giảm nhẹ trên benchmark kiến thức.
+3. **Qwen3.5-4B = 24%:** `Qwen/Qwen3.5-4B` là model **BASE** (chưa instruct) → 0-shot MCQA ra ngẫu nhiên.
+   Đây là model mà SFT sẽ tạo cú nhảy lớn (base→tuned).
+4. **Lệch tác vụ/thước đo:** VMLU đo KIẾN THỨC, không đo tuân lệnh (thứ SFT cải thiện) → VMLU gần như không
+   bao giờ phản ánh giá trị SFT khi tune model đã-instruct.
+
+**Quyết định (theo người dùng):**
+- **Finetune từ BASE models** (Qwen3-4B-Base — đã xác nhận có chat_template) → base→tuned delta rõ.
+- **Data uy tín hơn (mix v2):** **Aya Dataset** (`CohereForAI/aya_dataset`, lọc `language=="Vietnamese"`,
+  **8.676 cặp do người bản xứ viết**, ACL 2024 Cohere) + **bkai vi-alpaca** (lab HUST). **BỎ Bactrian-X** (dịch máy).
+- Thêm hỗ trợ `filter` trong data_prep để lọc subset tiếng Việt của Aya.
+
+**Tham khảo data uy tín cho LLM tiếng Việt (research-grade):**
+- Aya Dataset/Collection (Cohere, human-annotated) — acl 2024.
+- bkai-foundation-models/* (HUST), Vistral, SeaLLM, PhoGPT (mô tả data trong paper).
+- Đánh giá: VMLU (Zalo), VLUE (UIT), VLSP-LLM 2023 — đây là *benchmark eval*, khác data *train*.
+
+**Nguồn:** Aya — aclanthology.org/2024.acl-long.620 ; Vistral — huggingface.co/Viet-Mistral/Vistral-7B-Chat ;
+awesome-vietnamese-nlp — github.com/vndee/awsome-vietnamese-nlp
+
 <!-- Thêm mục mới phía dưới theo ngày -->
