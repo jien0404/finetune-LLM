@@ -1,0 +1,31 @@
+# Smoke test — model nhỏ nhất + ít dữ liệu, chạy 5 step để verify pipeline.
+# KHÔNG dùng để đánh giá. Mục đích: bắt lỗi code trước khi tốn giờ GPU.
+experiment:
+  id: _smoke
+
+model:
+  name: Qwen/Qwen3-0.6B        # model nhỏ nhất họ Qwen3; đổi nếu repo id khác
+  load_in_4bit: false
+  max_seq_length: 512
+  use_unsloth: true
+
+method: lora
+
+data:
+  max_train_samples: 100
+
+train:
+  num_train_epochs: 1
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 1
+  eval_steps: 5
+  save_steps: 1000
+  logging_steps: 1
+  early_stopping_patience: null
+
+eval:
+  vmlu:
+    enabled: true
+    subset: 20            # cực nhỏ chỉ để xác nhận eval chạy ra số
+  aux:
+    enabled: false

@@ -37,4 +37,38 @@ mới). vLLM + lm-eval-harness cho eval. Tracking: check W&B trước, fallback 
 
 ---
 
+## 2026-06-24 — Ngày 1–5: Dựng pipeline (viết trên máy không-GPU, verify trên CPU)
+
+Đã hoàn thiện toàn bộ phần code/scaffold có thể làm mà không cần GPU. Mọi thứ điều khiển qua YAML.
+
+**Đã làm & đã verify trên CPU:**
+- **Config**: `base.yaml` + `exp/*.yaml`, merge sâu (override thắng). Verify load 8 config → exp_id đúng.
+- **Tracking**: `utils/tracking.py` + `scripts/check_wandb.py` — cổng quyết định backend. Test: máy này chưa
+  cài wandb → in `FALLBACK` đúng như thiết kế (sẽ dùng TensorBoard).
+- **Data**: `data_prep.py` (NFC, dedup, lọc rỗng/độ dài/độc hại → `messages` → split train/val/devset).
+  Verify `--dry-run` (không cần mạng): 150 mẫu giả → train/val/devset + summary.json OK.
+- **Train**: `train.py` (Unsloth → fallback TRL+PEFT). `--check` validate config+data trên CPU OK. Import
+  nặng (torch/unsloth) hoãn vào trong hàm → script parse được trên máy không-GPU.
+- **Eval**: `eval_vmlu.py` (chấm bằng log-prob A/B/C/D, accuracy tổng + 4 nhóm, subset phân tầng),
+  `eval_general.py` (wrapper lm-eval), `infer.py` (so base vs tuned trên devset).
+- **Tự động hoá**: `report.py` + `run_experiment.sh` (data→eval base→train→eval tuned→infer→ghi leaderboard).
+  Verify `report.py` append đúng 1 dòng vào `LEADERBOARD.md` với metrics giả.
+- **Configs sẵn**: Qwen3-4B/8B, Gemma3-4B/12B, Gemma4-12B, Qwen3.5-4B (LoRA bf16), Gemma4-31B (QLoRA), _smoke.
+- **Docs**: README, MODELS, DATASETS, EVAL.
+
+**Quyết định kỹ thuật đáng ghi:**
+- Chấm VMLU bằng **log-prob của token đáp án** thay vì parse text → ổn định, không phụ thuộc model có chịu
+  trả lời đúng format hay không.
+- Hoãn import torch/unsloth vào trong hàm để **toàn bộ pipeline validate được trên máy không-GPU** trước khi push.
+- Repo id của model **mới nhất** (Qwen3.5/Gemma4) đặt theo dự đoán → **phải verify trên HF khi chạy thật**
+  (đã ghi chú trong từng YAML + MODELS.md).
+
+**Việc cần làm trên máy L40S (chưa làm được ở đây vì không GPU):**
+1. `bash scripts/setup_env.sh` → `python scripts/check_wandb.py` → `bash scripts/smoke_test.sh`.
+2. Verify repo id model + repo dataset HF thật (Bactrian-X vi, vi-alpaca, 5CD-AI; VMLU mirror).
+3. Chạy baseline Qwen3-4B + Gemma3-4B, đối chiếu **VMLU base** với leaderboard công bố (sanity eval).
+
+**Chưa push GitHub:** repo mới `git init` + commit local; **chưa có remote**. Cần người dùng tạo repo GitHub
+rồi `git remote add origin ... && git push -u origin main`.
+
 <!-- Thêm mục mới phía dưới theo ngày -->
