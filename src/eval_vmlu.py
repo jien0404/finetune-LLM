@@ -55,33 +55,48 @@ def load_vmlu(data_path: Optional[str], subset: Optional[int]) -> List[Dict]:
     else:
         from datasets import load_dataset
 
-        # Ưu tiên repo có nhãn để chấm cục bộ. Test set chính thức không công khai
-        # đáp án -> tự chọn split nào có 'answer' (dev/validation) để tính accuracy.
-        repos = ["anhdungitvn/vmlu_v1.5", "Zalo-AI/VMLU", "vmlu/vmlu"]
         rows = None
-        last_err = None
-        for repo in repos:
+        errors = []
+
+        # (1) File JSONL CÓ NHÃN, đọc trực tiếp qua JSON loader (bypass script dataset lỗi).
+        # ura-hcmut/vmlu_vi: split valid.jsonl có 'answer' (nhỏ, ~100 câu - đủ để dev/sanity).
+        raw_sources = [
+            ("ura-hcmut/vmlu_vi", "valid.jsonl"),
+        ]
+        for repo, fname in raw_sources:
+            url = f"https://huggingface.co/datasets/{repo}/resolve/main/{fname}"
             try:
-                dd = load_dataset(repo)
+                ds = load_dataset("json", data_files=url, split="train")
+                rows = [dict(r) for r in ds]
+                print(f"[eval] VMLU (labeled): {repo}/{fname} n={len(rows)}")
+                break
             except Exception as e:  # noqa: BLE001
-                last_err = e
-                continue
-            chosen = None
-            for split in ["dev", "validation", "val", "train", "test"]:
-                if split in dd and len(dd[split]) > 0:
-                    norm = _normalize_row(dict(dd[split][0]))
-                    if norm and norm["answer_idx"] is not None:
-                        chosen = split
-                        break
-            if chosen is None:  # không có split nào có nhãn -> lấy split đầu (chỉ sinh preds)
-                chosen = list(dd.keys())[0]
-            rows = [dict(r) for r in dd[chosen]]
-            print(f"[eval] VMLU: repo={repo} split={chosen} n={len(rows)}")
-            break
+                errors.append(f"{repo}/{fname}: {e}")
+
+        # (2) Dataset đầy đủ (có thể gated - cần `huggingface-cli login`); tự chọn split có nhãn.
+        if rows is None:
+            for repo in ["anhdungitvn/vmlu_v1.5", "Zalo-AI/VMLU"]:
+                try:
+                    dd = load_dataset(repo)
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"{repo}: {e}")
+                    continue
+                chosen = next(
+                    (s for s in ["dev", "validation", "val", "train", "test"]
+                     if s in dd and len(dd[s]) > 0
+                     and (_normalize_row(dict(dd[s][0])) or {}).get("answer_idx") is not None),
+                    list(dd.keys())[0],
+                )
+                rows = [dict(r) for r in dd[chosen]]
+                print(f"[eval] VMLU: repo={repo} split={chosen} n={len(rows)}")
+                break
+
         if rows is None:
             raise RuntimeError(
-                f"Không tải được VMLU từ HF (thử: {repos}). Truyền --data-path tới file local "
-                f"(JSON/JSONL có question/choices/answer). Lỗi cuối: {last_err}"
+                "Không tải được VMLU có nhãn từ HF. Cách xử lý:\n"
+                "  - Tải dev/valid set có nhãn rồi truyền --data-path file.jsonl, HOẶC\n"
+                "  - `huggingface-cli login` nếu dùng dataset gated.\n"
+                "Lỗi từng nguồn:\n  - " + "\n  - ".join(errors)
             )
     rows = [_normalize_row(r) for r in rows]
     rows = [r for r in rows if r is not None]

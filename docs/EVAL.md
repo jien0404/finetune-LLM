@@ -9,8 +9,13 @@ Giữ **nhất quán xuyên suốt** để leaderboard công bằng giữa các 
   so ground-truth. Robust hơn parse text tự do. Báo **accuracy tổng + theo 4 nhóm**.
 - **Subset:** mặc định 2000 câu **phân tầng theo nhóm** để lặp nhanh; run cuối/đối thủ chính chạy full
   (`--subset` để override, hoặc `eval.vmlu.subset: null`).
-- **Lưu ý nhãn:** test set chính thức VMLU có thể không công khai nhãn (nộp lên leaderboard). Khi đó script
-  chỉ sinh `preds.json` để nộp. Dùng tập có nhãn (dev/val của VMLU) để chấm cục bộ; xác nhận khi chạy.
+- **Lưu ý nhãn (quan trọng):** test set chính thức VMLU (10.880 câu) **không công khai đáp án** — phải nộp
+  prediction lên https://vmlu.ai/submit để lấy số trên leaderboard. Vì vậy:
+  - **Dev/sanity cục bộ:** `eval_vmlu.py` tự tải tập **có nhãn public** `ura-hcmut/vmlu_vi` (split `valid.jsonl`,
+    ~100 câu) để chấm accuracy nhanh khi lặp. Đây là **proxy nhỏ**, không đại diện đủ 58 chủ đề.
+  - **Số chính thức:** chạy trên test set đầy đủ (unlabeled) để sinh `preds.json`/submission rồi nộp vmlu.ai.
+  - Có dataset đầy đủ có nhãn (vd `anhdungitvn/vmlu_v1.5`) nhưng **gated** — cần `huggingface-cli login` + xin quyền.
+  - Hoặc tự tải file dev có nhãn rồi truyền `--data-path file.jsonl`.
 
 ```bash
 # baseline (model gốc) — chạy 1 lần cho mỗi base model
