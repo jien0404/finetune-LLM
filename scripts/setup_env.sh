@@ -68,6 +68,12 @@ $PIP install torch --index-url https://download.pytorch.org/whl/cu124
 echo "==> Cài requirements.txt:"
 $PIP install -r requirements.txt
 
+# 3b) Gỡ torchao: bản kéo theo cần torch>=2.11 nhưng vLLM ghim torch 2.6.0 ->
+# transformers import quantizer torchao lúc khởi động sẽ crash. Ta không dùng
+# torchao (4-bit đã dùng bitsandbytes), nên gỡ cho an toàn.
+echo "==> Gỡ torchao (xung đột torch version, không cần dùng):"
+$PIP uninstall torchao 2>/dev/null || true
+
 echo "==> Phiên bản chính:"
 python - <<'PY'
 import importlib
