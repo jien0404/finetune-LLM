@@ -1,0 +1,11 @@
+# Baseline #1 — Qwen3-4B-Instruct-2507, LoRA bf16. ~10GB VRAM trên L40S.
+experiment:
+  id: qwen3-4b_lora-r16_lr2e4_ep2
+
+model:
+  name: Qwen/Qwen3-4B-Instruct-2507
+  load_in_4bit: false
+  max_seq_length: 2048
+
+method: lora
+# Mọi hyperparam khác kế thừa từ configs/base.yaml.

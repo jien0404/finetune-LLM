@@ -1,0 +1,36 @@
+# =============================================================================
+# Finetune LLM tiếng Việt — dependencies
+# Pin theo hệ sinh thái HuggingFace + Unsloth (06/2026).
+# CÀI TRÊN MÁY L40S (CUDA 12.x). Máy không-GPU chỉ cần phần "dev/CPU" ở dưới.
+# =============================================================================
+
+# --- Core training (GPU) ---
+# Cài torch khớp CUDA của máy L40S TRƯỚC (xem scripts/setup_env.sh), rồi mới cài file này.
+transformers>=4.57.0
+trl>=0.21.0
+peft>=0.17.0
+accelerate>=1.6.0
+datasets>=3.2.0
+bitsandbytes>=0.47.0
+# Unsloth: tăng tốc 2x, giảm ~70% VRAM. Cài bản khớp torch/CUDA (xem setup_env.sh).
+unsloth>=2026.6.0
+unsloth_zoo>=2026.6.0
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+
+# --- Inference / eval throughput ---
+vllm>=0.8.0
+lm-eval>=0.4.5
+
+# --- Tracking & tiện ích ---
+wandb>=0.19.0
+tensorboard>=2.18.0
+pyyaml>=6.0
+pandas>=2.2.0
+matplotlib>=3.9.0
+tqdm>=4.67.0
+huggingface-hub>=0.27.0
+
+# --- Dev/CPU (chạy được trên máy không-GPU để verify logic) ---
+# Các package trên đa phần import được trên CPU; data_prep + prompt_templates + check_wandb
+# không cần GPU. Nếu chỉ làm dev, cài tối thiểu: datasets, pyyaml, pandas, wandb, transformers.

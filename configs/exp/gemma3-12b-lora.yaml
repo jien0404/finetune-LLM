@@ -1,0 +1,14 @@
+# Gemma-3-12B-it, LoRA bf16. ~30GB VRAM trên L40S.
+experiment:
+  id: gemma3-12b_lora-r16_lr2e4_ep2
+
+model:
+  name: google/gemma-3-12b-it
+  load_in_4bit: false
+  max_seq_length: 2048
+
+method: lora
+
+train:
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 8

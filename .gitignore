@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Data & model artifacts (KHÔNG commit — quá lớn)
+data/
+*.bin
+*.safetensors
+*.gguf
+checkpoints/
+outputs/
+adapters/
+wandb/
+runs/tb/
+
+# Results: GIỮ markdown/json/csv nhỏ, BỎ generation lớn & checkpoint
+results/runs/**/checkpoint-*/
+results/runs/**/*.safetensors
+results/runs/**/adapter_model.*
+
+# Eval caches
+.cache/
+hf_cache/
+*.lock
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,79 @@
+# =============================================================================
+# Config mặc định cho mọi experiment. File trong configs/exp/*.yaml chỉ override
+# những gì cần. KHÔNG sửa code Python để đổi model/hyperparam — sửa YAML.
+# =============================================================================
+
+experiment:
+  id: null              # nếu null sẽ tự sinh từ model+method+hyperparam (xem utils/config.py)
+  seed: 42
+
+# --- Model ---
+model:
+  name: Qwen/Qwen3-4B-Instruct-2507   # HF repo id; override trong exp/
+  max_seq_length: 2048
+  load_in_4bit: false   # true => QLoRA (bắt buộc cho model >= 27B trên L40S 46GB)
+  dtype: bfloat16       # L40S hỗ trợ bf16 tốt
+  use_unsloth: true     # true: dùng Unsloth (nhanh, ít VRAM); false: fallback TRL+PEFT thuần
+
+# --- Phương pháp finetune ---
+method: lora            # lora | qlora (qlora = lora + load_in_4bit)
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.0
+  target_modules:       # attn + mlp; phù hợp Qwen3/Gemma
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: none
+  use_gradient_checkpointing: unsloth   # "unsloth" | true | false
+
+# --- Dữ liệu ---
+data:
+  mix_config: configs/data/instruction_mix_v1.yaml   # định nghĩa nguồn + tỉ lệ
+  val_fraction: 0.10
+  devset_size: 300       # subset cố định để sanity định tính
+  max_train_samples: null  # null = dùng hết; đặt số nhỏ để debug nhanh
+
+# --- Huấn luyện ---
+train:
+  output_dir: results/runs        # exp_id sẽ được nối vào: results/runs/<exp_id>
+  num_train_epochs: 2
+  learning_rate: 2.0e-4
+  lr_scheduler_type: linear
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4   # effective batch = 32
+  per_device_eval_batch_size: 8
+  optim: adamw_8bit
+  logging_steps: 10
+  eval_steps: 100
+  save_steps: 200
+  save_total_limit: 2
+  packing: true          # gói nhiều mẫu ngắn -> tăng throughput
+  report_metric: eval_loss
+  early_stopping_patience: 2
+
+# --- Tracking ---
+tracking:
+  backend: auto          # auto | wandb | tensorboard | none (auto = thử W&B, fail thì TB)
+  project: finetune-llm-vi
+  tags: []
+  force: false           # true: ép wandb dù check fail (không khuyến nghị)
+  tb_logdir: null        # null => runs/tb/<exp_id>
+
+# --- Đánh giá ---
+eval:
+  vmlu:
+    enabled: true
+    subset: 2000         # null = full 10880 câu; subset để lặp nhanh
+    n_shot: 0
+  aux:
+    enabled: false       # bật ở run cuối; cấu hình task trong eval_general.py
+    tasks: []
