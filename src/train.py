@@ -177,7 +177,7 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
         save_total_limit=t["save_total_limit"],
         bf16=True,
         packing=t.get("packing", True),
-        max_seq_length=cfg["model"]["max_seq_length"],
+        max_length=cfg["model"]["max_seq_length"],   # TRL >=0.12 đổi tên từ max_seq_length
         load_best_model_at_end=True,
         metric_for_best_model=t.get("report_metric", "eval_loss"),
         report_to=tracking["report_to"],
@@ -191,7 +191,7 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,   # TRL >=0.13 đổi tên từ tokenizer=
         args=sft_args,
         train_dataset=ds["train"],
         eval_dataset=ds["validation"],
