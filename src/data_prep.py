@@ -104,11 +104,17 @@ def load_source_rows(src: Dict, dry_run: bool) -> Iterable[Dict]:
 
     from datasets import load_dataset
 
-    kwargs = {"split": src.get("split", "train")}
-    if src.get("hf_config"):
-        ds = load_dataset(src["hf_path"], src["hf_config"], **kwargs)
+    split = src.get("split", "train")
+    if src.get("data_files"):
+        # Trỏ thẳng file dữ liệu (json/jsonl/.gz/parquet) -> bỏ qua dataset script.
+        # Cần khi datasets 3.x từ chối repo có script (vd Bactrian-X.py).
+        df = src["data_files"]
+        fmt = src.get("data_format", "json")
+        ds = load_dataset(fmt, data_files=df, split=split)
+    elif src.get("hf_config"):
+        ds = load_dataset(src["hf_path"], src["hf_config"], split=split)
     else:
-        ds = load_dataset(src["hf_path"], **kwargs)
+        ds = load_dataset(src["hf_path"], split=split)
     max_samples = src.get("max_samples")
     for i, row in enumerate(ds):
         if max_samples is not None and i >= max_samples:

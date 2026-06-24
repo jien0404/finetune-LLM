@@ -8,7 +8,9 @@ description: Mix instruction tiếng Việt tổng quát cho SFT (v1).
 sources:
   - name: bactrian-x-vi
     hf_path: MBZUAI/Bactrian-X
-    hf_config: vi              # subset tiếng Việt
+    # datasets 3.x bỏ hỗ trợ script (Bactrian-X.py) -> trỏ thẳng file vi.json.gz
+    data_files: https://huggingface.co/datasets/MBZUAI/Bactrian-X/resolve/main/data/vi.json.gz
+    data_format: json
     split: train
     weight: 1.0
     # mapping cột nguồn -> schema chuẩn (instruction/input/output)
