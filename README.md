@@ -32,6 +32,7 @@ bash scripts/setup_env.sh                # cài full (GPU)
 python scripts/check_wandb.py            # chốt backend tracking
 bash scripts/smoke_test.sh               # 5 step + eval mini, KHÔNG tốn GPU lâu
 bash scripts/run_experiment.sh configs/exp/qwen3-4b-lora.yaml   # train + eval + ghi leaderboard
+CUDA_VISIBLE_DEVICES=1 bash scripts/run_experiment.sh configs/exp/qwen3-4b-lora.yaml
 ```
 
 Mỗi run tạo `results/runs/<exp_id>/` (config snapshot, metrics, sample generations) và thêm 1 dòng

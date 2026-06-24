@@ -5,6 +5,6 @@ experiment:
 model:
   name: google/gemma-3-4b-it
   load_in_4bit: false
-  max_seq_length: 2048
+  max_seq_length: 1024
 
 method: lora

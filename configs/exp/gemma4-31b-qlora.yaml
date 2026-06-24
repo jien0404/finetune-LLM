@@ -6,7 +6,7 @@ experiment:
 model:
   name: google/gemma-4-31b        # verify repo id trên HF khi chạy
   load_in_4bit: true              # QLoRA
-  max_seq_length: 2048
+  max_seq_length: 1024
 
 method: qlora
 

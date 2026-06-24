@@ -10,7 +10,9 @@ experiment:
 # --- Model ---
 model:
   name: Qwen/Qwen3-4B-Instruct-2507   # HF repo id; override trong exp/
-  max_seq_length: 2048
+  # 1024 đủ cho đa số instruction (output TB ~250 token). Vocab lớn (Qwen 151k,
+  # Gemma 256k) làm tensor logits = batch×seq×vocab rất tốn VRAM -> giữ seq vừa phải.
+  max_seq_length: 1024
   load_in_4bit: false   # true => QLoRA (bắt buộc cho model >= 27B trên L40S 46GB)
   dtype: bfloat16       # L40S hỗ trợ bf16 tốt
   # use_unsloth: tạm để FALSE vì Unsloth (logits rỗng khi train) xung đột với metric
@@ -54,7 +56,7 @@ train:
   weight_decay: 0.01
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 4   # effective batch = 32
-  per_device_eval_batch_size: 8
+  per_device_eval_batch_size: 4    # nhỏ để tránh OOM lúc eval (logits vocab lớn)
   optim: adamw_8bit
   logging_steps: 10
   eval_steps: 100
