@@ -143,10 +143,42 @@ def load_model_and_tokenizer(cfg: Dict):
     return model, tokenizer
 
 
+def tokenize_completion_only(example: Dict, tokenizer, max_len: int) -> Dict:
+    """Tokenize 1 ví dụ chat -> input_ids + labels (mask phần prompt = -100).
+
+    Chỉ tính loss trên phần trả lời (assistant). Dùng chat template của model để
+    đảm bảo đúng special token. Tự viết để KHÔNG phụ thuộc TRL (API hay đổi/bug).
+    """
+    messages = example["messages"]
+    full_ids = tokenizer.apply_chat_template(
+        messages, tokenize=True, add_generation_prompt=False
+    )
+    # prompt = mọi message trừ assistant cuối, kèm generation prompt
+    prompt_ids = tokenizer.apply_chat_template(
+        messages[:-1], tokenize=True, add_generation_prompt=True
+    )
+    labels = list(full_ids)
+    n_mask = min(len(prompt_ids), len(full_ids))
+    for i in range(n_mask):
+        labels[i] = -100  # không tính loss trên prompt
+
+    full_ids = full_ids[:max_len]
+    labels = labels[:max_len]
+    return {
+        "input_ids": full_ids,
+        "labels": labels,
+        "attention_mask": [1] * len(full_ids),
+    }
+
+
 def train(cfg: Dict, max_steps: int | None = None) -> Dict:
     import torch
-    from trl import SFTConfig, SFTTrainer
-    from transformers import EarlyStoppingCallback
+    from transformers import (
+        Trainer,
+        TrainingArguments,
+        EarlyStoppingCallback,
+        DataCollatorForSeq2Seq,
+    )
 
     set_seed(cfg["experiment"]["seed"])
     exp_id = cfg["_meta"]["exp_id"]
@@ -155,10 +187,21 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
 
     tracking = init_tracking(cfg)
     model, tokenizer = load_model_and_tokenizer(cfg)
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     ds = load_dataset_for_sft(cfg)
+    max_len = cfg["model"]["max_seq_length"]
+    # tokenize (completion-only masking); bỏ cột gốc để collator nhận đúng input
+    remove_cols = ds["train"].column_names
+    ds = ds.map(
+        lambda ex: tokenize_completion_only(ex, tokenizer, max_len),
+        remove_columns=remove_cols,
+        desc="Tokenize (completion-only)",
+    )
 
     t = cfg["train"]
-    sft_args = SFTConfig(
+    args = TrainingArguments(
         output_dir=str(run_dir),
         num_train_epochs=t["num_train_epochs"] if not max_steps else 1,
         max_steps=max_steps if max_steps else -1,
@@ -176,25 +219,32 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
         save_steps=t["save_steps"],
         save_total_limit=t["save_total_limit"],
         bf16=True,
-        packing=t.get("packing", True),
-        max_length=cfg["model"]["max_seq_length"],   # TRL >=0.12 đổi tên từ max_seq_length
+        gradient_checkpointing=bool(cfg["lora"].get("use_gradient_checkpointing")),
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         load_best_model_at_end=True,
         metric_for_best_model=t.get("report_metric", "eval_loss"),
         report_to=tracking["report_to"],
         seed=cfg["experiment"]["seed"],
-        dataset_kwargs={"skip_prepare_dataset": False},
     )
 
     callbacks = []
     if t.get("early_stopping_patience"):
         callbacks.append(EarlyStoppingCallback(early_stopping_patience=t["early_stopping_patience"]))
 
-    trainer = SFTTrainer(
+    # PEFT + gradient checkpointing: cần bật input require grads
+    if args.gradient_checkpointing and hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
+
+    collator = DataCollatorForSeq2Seq(
+        tokenizer, label_pad_token_id=-100, padding="longest"
+    )
+    trainer = Trainer(
         model=model,
-        processing_class=tokenizer,   # TRL >=0.13 đổi tên từ tokenizer=
-        args=sft_args,
+        processing_class=tokenizer,
+        args=args,
         train_dataset=ds["train"],
         eval_dataset=ds["validation"],
+        data_collator=collator,
         callbacks=callbacks,
     )
 
