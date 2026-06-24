@@ -39,12 +39,17 @@ def generate(model, tokenizer, messages, max_new_tokens=512) -> str:
     import torch
 
     user_messages = [m for m in messages if m["role"] != "assistant"]
-    inputs = tokenizer.apply_chat_template(
-        user_messages, add_generation_prompt=True, return_tensors="pt"
-    ).to(model.device)
+    enc = tokenizer.apply_chat_template(
+        user_messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+    )
+    if hasattr(enc, "items"):
+        inputs = {k: v.to(model.device) for k, v in enc.items()}
+    else:
+        inputs = {"input_ids": enc.to(model.device)}
+    prompt_len = inputs["input_ids"].shape[1]
     with torch.no_grad():
-        out = model.generate(inputs, max_new_tokens=max_new_tokens, do_sample=False)
-    return tokenizer.decode(out[0][inputs.shape[1]:], skip_special_tokens=True).strip()
+        out = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+    return tokenizer.decode(out[0][prompt_len:], skip_special_tokens=True).strip()
 
 
 def main():

@@ -204,11 +204,16 @@ def evaluate(cfg: Dict, adapter: Optional[str], base_only: bool, data_path: Opti
             {"role": "system", "content": "Bạn là trợ lý làm bài trắc nghiệm tiếng Việt."},
             {"role": "user", "content": format_prompt(row)},
         ]
-        inputs = tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt"
-        ).to(model.device)
+        enc = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
+        )
+        # return_dict=True -> BatchEncoding (dict). Một số version trả tensor -> bọc lại.
+        if hasattr(enc, "items"):
+            inputs = {k: v.to(model.device) for k, v in enc.items()}
+        else:
+            inputs = {"input_ids": enc.to(model.device)}
         with torch.no_grad():
-            logits = model(inputs).logits[0, -1]  # logits cho token kế tiếp
+            logits = model(**inputs).logits[0, -1]  # logits cho token kế tiếp
         choice_logits = torch.tensor([logits[i].item() for i in letter_ids])
         pred_idx = int(choice_logits.argmax())
         preds.append({"pred": LETTERS[pred_idx], "subject": row["subject"]})
