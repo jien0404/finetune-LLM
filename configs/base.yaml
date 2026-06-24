@@ -65,6 +65,10 @@ train:
   packing: true          # gói nhiều mẫu ngắn -> tăng throughput
   report_metric: eval_loss
   early_stopping_patience: 2
+  # Liger Kernel: fused linear cross-entropy -> KHÔNG materialize full logits
+  # [batch×seq×vocab]. Giảm ~60-80% VRAM cho model vocab lớn (Qwen 151k, Gemma 256k)
+  # + nhanh ~20%. Hỗ trợ Qwen3/Gemma3. Cần `pip install liger-kernel`. Tự bỏ qua nếu chưa cài.
+  use_liger_kernel: true
 
 # --- Tracking ---
 tracking:

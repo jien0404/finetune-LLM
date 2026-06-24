@@ -114,4 +114,34 @@ Sau 8 lần gỡ lỗi môi trường/API, smoke test chạy hết: data → tra
 
 **Sẵn sàng chạy thật:** `bash scripts/run_experiment.sh configs/exp/qwen3-4b-lora.yaml`.
 
+## 2026-06-24 — Ngày 1: Nghiên cứu VRAM — Qwen3-4B LoRA tốn 36GB (kỳ vọng ~18GB)
+
+**Câu hỏi:** Vì sao Qwen3-4B LoRA (weights bf16 chỉ 8GB) lại ngốn 36GB VRAM?
+
+**Nguyên nhân (đã xác minh qua tài liệu):** **cross-entropy trên vocab khổng lồ** (Qwen3 = 151.936,
+Gemma = 256k). Khi tính loss, transformers materialize tensor logits `[batch, seq, vocab]`, **upcast fp32**
+cho CE, và giữ gradient của nó:
+```
+logits bf16   8×1024×152k×2B ≈ 2.4GB
+logits fp32 (.float() trong CE) ≈ 4.7GB
+grad d_logits fp32             ≈ 4.7GB   -> "đầu loss" spike ~12-15GB
++ weights 8GB + activation + CUDA ctx + reserved của caching allocator -> nvidia-smi 36GB
+```
+Tài liệu (Towards Data Science / Liger) mô tả đúng case: **"84% reduction, from 36GB to 5GB"**. Đây là
+hiện tượng kinh điển của model vocab lớn, không phải bug. Lưu ý: `nvidia-smi` hiển thị memory **reserved**
+(caching allocator giữ), cao hơn `torch.cuda.max_memory_allocated()` (peak thật, đang ghi vào metric).
+
+**Giải pháp đã áp dụng: Liger Kernel** (`use_liger_kernel: true`). Fused linear cross-entropy tính loss theo
+chunk, **không materialize full logits** → giảm 60-80% VRAM phần loss + nhanh ~20%. Hỗ trợ Qwen3
+(`apply_liger_kernel_to_qwen3`) và Gemma3. Cần `pip install liger-kernel` (transformers ≥4.52). Đã thêm flag
++ guard (tự bỏ qua nếu chưa cài). **VRAM kỳ vọng sau Liger: ~15-18GB** (đúng ước tính ban đầu).
+
+**Nguồn:**
+- Liger-Kernel — github.com/linkedin/Liger-Kernel ; docs linkedin.github.io/Liger-Kernel
+- "Cutting LLM Memory by 84%: A Deep Dive into Fused Kernels" — towardsdatascience.com
+- PyTorch blog: torchtune + torch.compile & Liger Kernel
+
+**Hệ quả:** sau khi bật Liger, có thể cân nhắc tắt gradient checkpointing hoặc tăng batch để nhanh hơn nữa
+(việc tối ưu tiếp, đo VRAM thực rồi quyết).
+
 <!-- Thêm mục mới phía dưới theo ngày -->

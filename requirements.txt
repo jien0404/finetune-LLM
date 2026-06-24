@@ -18,6 +18,8 @@ bitsandbytes>=0.47.0
 # Unsloth: tăng tốc 2x, giảm ~70% VRAM. Cài bản khớp torch/CUDA (xem setup_env.sh).
 unsloth>=2026.6.0
 unsloth_zoo>=2026.6.0
+# Liger Kernel: fused linear cross-entropy -> giảm 60-80% VRAM phần loss (vocab lớn).
+liger-kernel>=0.5.0
 sentencepiece>=0.2.0
 protobuf>=4.25.0
 

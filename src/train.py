@@ -205,6 +205,16 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
     )
 
     t = cfg["train"]
+    # Liger Kernel: giảm mạnh VRAM phần cross-entropy (vocab lớn). Bỏ qua nếu chưa cài.
+    use_liger = t.get("use_liger_kernel", False)
+    if use_liger:
+        try:
+            import liger_kernel  # noqa: F401
+            print("[train] Bật Liger Kernel (fused linear cross-entropy).")
+        except ImportError:
+            print("[train] liger-kernel chưa cài -> bỏ qua. `pip install liger-kernel` để giảm ~60% VRAM.")
+            use_liger = False
+
     args = TrainingArguments(
         output_dir=str(run_dir),
         num_train_epochs=t["num_train_epochs"] if not max_steps else 1,
@@ -223,6 +233,7 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
         save_steps=t["save_steps"],
         save_total_limit=t["save_total_limit"],
         bf16=True,
+        use_liger_kernel=use_liger,
         gradient_checkpointing=bool(cfg["lora"].get("use_gradient_checkpointing")),
         gradient_checkpointing_kwargs={"use_reentrant": False},
         load_best_model_at_end=True,
