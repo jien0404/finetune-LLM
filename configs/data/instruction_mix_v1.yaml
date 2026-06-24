@@ -1,0 +1,52 @@
+# Định nghĩa mix dữ liệu instruction tiếng Việt (v1).
+# data_prep.py đọc file này, tải từng nguồn, làm sạch, chuẩn hoá về format `messages`,
+# trộn theo `weight`, rồi cắt train/val. Tên dataset HF cần verify khi chạy.
+
+name: instruction_mix_v1
+description: Mix instruction tiếng Việt tổng quát cho SFT (v1).
+
+sources:
+  - name: bactrian-x-vi
+    hf_path: MBZUAI/Bactrian-X
+    hf_config: vi              # subset tiếng Việt
+    split: train
+    weight: 1.0
+    # mapping cột nguồn -> schema chuẩn (instruction/input/output)
+    columns:
+      instruction: instruction
+      input: input
+      output: output
+    max_samples: null
+
+  - name: vi-alpaca
+    hf_path: bkai-foundation-models/vi-alpaca   # verify repo id khi chạy
+    split: train
+    weight: 1.0
+    columns:
+      instruction: instruction
+      input: input
+      output: output
+    max_samples: null
+
+  - name: 5cd-ai-cot-vi
+    hf_path: 5CD-AI/Vietnamese-cot               # verify repo id khi chạy
+    split: train
+    weight: 0.5
+    columns:
+      instruction: instruction
+      input: input
+      output: output
+    max_samples: 20000
+
+# Làm sạch
+cleaning:
+  unicode_normalize: NFC
+  drop_empty: true
+  min_chars_output: 1
+  max_chars_output: 8000
+  dedup: true                 # khử trùng theo hash (instruction+output)
+  toxicity_filter: true       # blacklist + heuristic (xem data_prep.py)
+
+# Prompt
+prompt_template: vi_instruct_v1   # tên template trong src/prompt_templates.py
+system_prompt: "Bạn là trợ lý AI hữu ích, trả lời bằng tiếng Việt rõ ràng và chính xác."

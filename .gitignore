@@ -8,7 +8,8 @@ env/
 .env
 
 # Data & model artifacts (KHÔNG commit — quá lớn)
-data/
+# Neo về gốc (/data/) để KHÔNG match configs/data/ (chứa YAML cần commit).
+/data/
 *.bin
 *.safetensors
 *.gguf
