@@ -176,7 +176,7 @@ def evaluate(cfg: Dict, adapter: Optional[str], base_only: bool, data_path: Opti
     model_name = cfg["model"]["name"]
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, device_map="auto"
+        model_name, dtype=torch.bfloat16, device_map={"": 0}  # ghim 1 GPU, tránh CPU offload
     )
     if adapter and not base_only:
         from peft import PeftModel

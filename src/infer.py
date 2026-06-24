@@ -69,7 +69,7 @@ def main():
     model_name = cfg["model"]["name"]
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     base = AutoModelForCausalLM.from_pretrained(
-        model_name, torch_dtype=torch.bfloat16, device_map="auto"
+        model_name, dtype=torch.bfloat16, device_map={"": 0}  # ghim 1 GPU
     )
     base.eval()
 

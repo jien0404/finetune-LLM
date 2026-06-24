@@ -126,8 +126,8 @@ def load_model_and_tokenizer(cfg: Dict):
     tokenizer = AutoTokenizer.from_pretrained(m["name"])
     model = AutoModelForCausalLM.from_pretrained(
         m["name"],
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
+        dtype=torch.bfloat16,
+        device_map={"": 0},   # ghim 1 GPU; "auto" gây CPU offload -> lỗi cublas/meta khi train
         **quant_kwargs,
     )
     peft_cfg = LoraConfig(
