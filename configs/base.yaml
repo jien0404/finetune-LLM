@@ -20,6 +20,8 @@ model:
   # trên L40S 46GB vẫn đủ VRAM cho LoRA bf16 <=12B và QLoRA model lớn. Bật lại khi đã
   # xử lý compat Unsloth<->TRL. Xem docs/RESEARCH_LOG.md.
   use_unsloth: false
+  # Gemma 3/4 đa phương thức yêu cầu token_type_ids khi train -> bật cho config Gemma.
+  add_token_type_ids: false
 
 # --- Phương pháp finetune ---
 method: lora            # lora | qlora (qlora = lora + load_in_4bit)

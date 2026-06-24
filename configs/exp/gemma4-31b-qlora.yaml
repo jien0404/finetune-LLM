@@ -7,6 +7,7 @@ model:
   name: google/gemma-4-31b        # verify repo id trên HF khi chạy
   load_in_4bit: true              # QLoRA
   max_seq_length: 1024
+  add_token_type_ids: true   # Gemma đa phương thức
 
 method: qlora
 

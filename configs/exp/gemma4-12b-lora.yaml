@@ -6,6 +6,7 @@ model:
   name: google/gemma-4-12b-it     # verify repo id chính xác trên HF khi chạy
   load_in_4bit: false
   max_seq_length: 1024
+  add_token_type_ids: true   # Gemma đa phương thức
 
 method: lora
 

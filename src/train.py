@@ -254,9 +254,18 @@ def train(cfg: Dict, max_steps: int | None = None) -> Dict:
     if args.gradient_checkpointing and hasattr(model, "enable_input_require_grads"):
         model.enable_input_require_grads()
 
-    collator = DataCollatorForSeq2Seq(
+    base_collator = DataCollatorForSeq2Seq(
         tokenizer, label_pad_token_id=-100, padding="longest"
     )
+    # Gemma 3/4 (đa phương thức) yêu cầu token_type_ids khi train. Data text-only -> toàn 0.
+    if cfg["model"].get("add_token_type_ids", False):
+        def collator(features):
+            batch = base_collator(features)
+            batch["token_type_ids"] = torch.zeros_like(batch["input_ids"])
+            return batch
+    else:
+        collator = base_collator
+
     trainer = Trainer(
         model=model,
         processing_class=tokenizer,
