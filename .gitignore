@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.env
 
 # Data & model artifacts (KHÔNG commit — quá lớn)
 data/

@@ -31,25 +31,19 @@ def check_wandb_connectivity(timeout: float = 8.0) -> Tuple[bool, str]:
         except Exception as e:  # noqa: BLE001
             return False, f"Không xác định được API key: {e}"
 
+    # Phép thử thật: gọi API viewer (vừa kiểm tra mạng vừa xác thực key).
+    # Không ping HEAD tới host gốc vì URL đó có thể trả 404 dù host vẫn sống.
     host = os.environ.get("WANDB_BASE_URL", "https://api.wandb.ai")
-    try:
-        import urllib.request
-
-        req = urllib.request.Request(host, method="HEAD")
-        urllib.request.urlopen(req, timeout=timeout)
-    except Exception as e:  # noqa: BLE001
-        return False, f"Không ping được W&B host ({host}): {e}"
-
-    # thử xác thực thật bằng API
     try:
         import wandb
 
         api = wandb.Api(timeout=int(timeout))
-        _ = api.viewer  # gọi để xác thực key
+        viewer = api.viewer  # gọi để xác thực key + kiểm tra kết nối
+        username = getattr(viewer, "username", None) or getattr(viewer, "entity", "?")
     except Exception as e:  # noqa: BLE001
-        return False, f"API key không xác thực được: {e}"
+        return False, f"Không kết nối/xác thực được W&B ({host}): {e}"
 
-    return True, "Kết nối W&B OK — sẽ log online."
+    return True, f"Kết nối W&B OK (user={username}) — sẽ log online."
 
 
 def init_tracking(cfg: Dict[str, Any]) -> Dict[str, Any]:
