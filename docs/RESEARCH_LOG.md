@@ -87,4 +87,31 @@ Smoke test trên L40S (Python 3.11, torch 2.6.0+cu124, transformers 4.57, TRL 0.
 **Bài học:** stack HF mid-2026 (transformers 5.x sắp tới, TRL 0.21) đổi API nhanh — pin version vào
 `requirements.txt` khi đã có cấu hình chạy được trên L40S.
 
+## 2026-06-24 — Ngày 1: SMOKE TEST PASS (pipeline end-to-end xanh) ✅
+
+Sau 8 lần gỡ lỗi môi trường/API, smoke test chạy hết: data → train → eval.
+
+**Kết quả smoke (Qwen3-0.6B, 5 step, data tí hon — chỉ để verify):**
+- Train: loss 1.63 → 0.043, eval_loss 0.024, **VRAM peak 1.11GB**, train_time 8s, adapter lưu OK.
+- Eval VMLU (proxy `ura-hcmut/vmlu_vi` valid, 744 câu có nhãn, subset 20): `vmlu_avg=25.0` =
+  **đúng mức ngẫu nhiên 4-choice** → xác nhận eval nối đúng (không phải tín hiệu chất lượng).
+- W&B log online OK (project finetune-llm-vi).
+
+**Các fix API/môi trường lần lượt (stack HF mid-2026):**
+7. TRL 0.21 đổi `max_seq_length`→`max_length`, `tokenizer=`→`processing_class=`.
+8. **Bỏ hẳn TRL SFTTrainer** (bug entropy_from_logits với logits rỗng) → dùng `transformers.Trainer`
+   + completion-only masking tự viết (mask prompt=-100). Ổn định, không phụ thuộc API TRL.
+9. `apply_chat_template(tokenize=True)` trả Encoding → pyarrow lỗi; chuyển sang lấy string rồi tokenize.
+10. VMLU: repo đoán không tồn tại / gated (anhdungitvn 401) → đọc thẳng `ura-hcmut/vmlu_vi` valid.jsonl
+    qua JSON loader (bypass script lỗi cột). **Lưu ý:** test set đầy đủ không có nhãn → số chính thức nộp vmlu.ai.
+11. `apply_chat_template(return_tensors=pt)` trả BatchEncoding → `model(**inputs)` thay vì `model(inputs)`.
+
+**Hạn chế đã biết (xử lý sau):**
+- Proxy VMLU valid (744 câu) không có trường `subject` → điểm theo nhóm dồn hết vào `other`. Bộ test đầy
+  đủ có subject; map nhóm sẽ hoạt động khi chấm trên đó. Đủ dùng để iterate cục bộ.
+- Unsloth đang tắt (xung đột TRL) — nhưng giờ đã bỏ TRL, có thể thử bật lại Unsloth để tăng tốc/giảm VRAM
+  cho model lớn (việc tương lai, cần kiểm tra Unsloth tương thích `transformers.Trainer`).
+
+**Sẵn sàng chạy thật:** `bash scripts/run_experiment.sh configs/exp/qwen3-4b-lora.yaml`.
+
 <!-- Thêm mục mới phía dưới theo ngày -->
