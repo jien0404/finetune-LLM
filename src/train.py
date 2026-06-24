@@ -116,24 +116,35 @@ def load_model_and_tokenizer(cfg: Dict):
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from peft import LoraConfig, get_peft_model
 
-    quant_kwargs = {}
-    if m["load_in_4bit"]:
-        from transformers import BitsAndBytesConfig
-
-        quant_kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
+    if not torch.cuda.is_available():
+        raise RuntimeError(
+            "CUDA không khả dụng trong tiến trình này. Kiểm tra: "
+            "`nvidia-smi` và `CUDA_VISIBLE_DEVICES`. "
+            "Vd: CUDA_VISIBLE_DEVICES=1 python ...  (GPU vật lý 1)."
         )
 
     tokenizer = AutoTokenizer.from_pretrained(m["name"])
-    model = AutoModelForCausalLM.from_pretrained(
-        m["name"],
-        dtype=torch.bfloat16,
-        device_map={"": 0},   # ghim 1 GPU; "auto" gây CPU offload -> lỗi cublas/meta khi train
-        **quant_kwargs,
-    )
+
+    if m["load_in_4bit"]:
+        # QLoRA: bitsandbytes cần device_map để đặt weight 4-bit lên GPU khi load.
+        from transformers import BitsAndBytesConfig
+
+        model = AutoModelForCausalLM.from_pretrained(
+            m["name"],
+            dtype=torch.bfloat16,
+            device_map={"": 0},
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+            ),
+        )
+    else:
+        # bf16: KHÔNG dùng device_map (tránh caching_allocator_warmup lỗi với model đa
+        # phương thức Gemma3). Load lên CPU rồi chuyển nguyên khối sang GPU 0.
+        model = AutoModelForCausalLM.from_pretrained(m["name"], dtype=torch.bfloat16)
+        model = model.to("cuda:0")
     peft_cfg = LoraConfig(
         r=lora["r"],
         lora_alpha=lora["lora_alpha"],
