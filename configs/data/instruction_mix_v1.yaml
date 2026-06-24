@@ -19,7 +19,7 @@ sources:
     max_samples: null
 
   - name: vi-alpaca
-    hf_path: bkai-foundation-models/vi-alpaca   # verify repo id khi chạy
+    hf_path: bkai-foundation-models/vi-alpaca    # ✅ public, cột instruction/input/output
     split: train
     weight: 1.0
     columns:
@@ -28,15 +28,8 @@ sources:
       output: output
     max_samples: null
 
-  - name: 5cd-ai-cot-vi
-    hf_path: 5CD-AI/Vietnamese-cot               # verify repo id khi chạy
-    split: train
-    weight: 0.5
-    columns:
-      instruction: instruction
-      input: input
-      output: output
-    max_samples: 20000
+  # Ghi chú: nguồn CoT/reasoning của 5CD-AI (vd Vietnamese-mabryCodes-tiny-cot-alpaca-gg-translated)
+  # đang GATED (cần huggingface-cli login + accept terms). Thêm vào mix v2 sau khi có quyền.
 
 # Làm sạch
 cleaning:
