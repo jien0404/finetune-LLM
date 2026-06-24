@@ -59,8 +59,9 @@ train:
   per_device_eval_batch_size: 4    # nhỏ để tránh OOM lúc eval (logits vocab lớn)
   optim: adamw_8bit
   logging_steps: 10
-  eval_steps: 100
-  save_steps: 200
+  eval_steps: 500          # eval thưa hơn: val 11.7K mẫu rất tốn (~8 phút/lần) nếu eval dày
+  max_eval_samples: 1500   # chỉ eval trên 1500 mẫu val (đủ theo dõi overfit, nhanh hơn ~8x)
+  save_steps: 500
   save_total_limit: 2
   packing: true          # gói nhiều mẫu ngắn -> tăng throughput
   report_metric: eval_loss

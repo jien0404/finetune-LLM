@@ -73,6 +73,10 @@ def load_dataset_for_sft(cfg: Dict):
     max_train = cfg["data"].get("max_train_samples")
     if max_train:
         ds["train"] = ds["train"].select(range(min(max_train, len(ds["train"]))))
+    # Giới hạn val để eval nhanh (cắt TRƯỚC khi tokenize -> tiết kiệm cả thời gian tokenize)
+    max_eval = cfg["train"].get("max_eval_samples")
+    if max_eval and "validation" in ds:
+        ds["validation"] = ds["validation"].select(range(min(max_eval, len(ds["validation"]))))
     return ds
 
 
